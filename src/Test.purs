@@ -25,4 +25,4 @@ instance logToScreenTestM :: LogToScreen TestM where
   log _ = pure unit -- no need to implement this
 
 instance getUserNameTestM :: GetUserName TestM where
-  getUserName = pure $ Name "errplace with better test"
+  getUserName = pure $ Name "error" -- replace with better test
