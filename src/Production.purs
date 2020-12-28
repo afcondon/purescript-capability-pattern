@@ -7,7 +7,6 @@ import App.Layer.Four (Name(..))
 import App.Layer.Three (class LogToScreen, class GetUserName)
 import Control.Monad.Reader (ReaderT, runReaderT)
 import Effect (Effect)
--- import Effect.Aff (launchAff, launchAff_)
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Class.Console (log) as Console
 import Node.Encoding (Encoding(..))

@@ -9,6 +9,7 @@ import App.Layer.Three (program)
 import Effect (Effect)
 import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
+import Effect.Class.Console (log)
 import Test.Assert (assert)
 
 
@@ -28,13 +29,14 @@ mainSync env = do
 mainTest :: Test.Environment -> Effect Unit
 mainTest env = do
   assert $ (Test.runApp program env) == "succeeds"
+  log "first test succeeded, now a failing test which will crash"
   assert $ (Test.runApp program env) == "failing test"
 
 
 mainAff :: Async.Environment -> Effect Unit
 mainAff env = launchAff_ do
-  -- do aff-ish things here with ProductionA version
+  -- we can do aff-ish things here with ProductionA version
   result <- Async.runApp program env
-  -- now do some synchronous things within Aff using liftEffect
+  -- ...also able to do synchronous things (within Aff) using liftEffect
   result2 <- liftEffect $ Sync.runApp program env
   pure unit
