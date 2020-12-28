@@ -2,9 +2,9 @@ module Main where
 
 import Prelude
 
-import App.Layer.Production (runApp, Environment) as S
-import App.Layer.ProductionA (runApp, Environment) as A
-import App.Layer.Test (runApp, Environment) as T
+import App.Layer.Production (runApp, Environment) as Sync
+import App.Layer.ProductionA (runApp, Environment) as Async
+import App.Layer.Test (runApp, Environment) as Test
 import App.Layer.Three (program)
 import Effect (Effect)
 import Effect.Aff (launchAff_)
@@ -20,21 +20,21 @@ main = do
   mainTest { someState: "Test"}
   pure unit
 
-mainSync :: S.Environment -> Effect Unit
+mainSync :: Sync.Environment -> Effect Unit
 mainSync env = do
-  result <- S.runApp program env
+  result <- Sync.runApp program env
   pure unit
 
-mainTest :: T.Environment -> Effect Unit
+mainTest :: Test.Environment -> Effect Unit
 mainTest env = do
-  assert $ (T.runApp program env) == "succeeds"
-  assert $ (T.runApp program env) == "failing test"
+  assert $ (Test.runApp program env) == "succeeds"
+  assert $ (Test.runApp program env) == "failing test"
 
 
-mainAff :: A.Environment -> Effect Unit
+mainAff :: Async.Environment -> Effect Unit
 mainAff env = launchAff_ do
   -- do aff-ish things here with ProductionA version
-  result <- A.runApp program env
+  result <- Async.runApp program env
   -- now do some synchronous things within Aff using liftEffect
-  result2 <- liftEffect $ S.runApp program env
+  result2 <- liftEffect $ Sync.runApp program env
   pure unit

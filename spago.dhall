@@ -9,6 +9,7 @@ You can edit this file as you like.
   , "console"
   , "effect"
   , "node-fs"
+  , "node-fs-aff"
   , "node-readline"
   , "psci-support"
   , "transformers"

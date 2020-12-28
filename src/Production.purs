@@ -11,7 +11,7 @@ import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Class.Console (log) as Console
 import Node.Encoding (Encoding(..))
-import Node.FS.Sync (readTextFile)
+import Node.FS.Sync (readTextFile) as Sync
 
 -- | Layer 2 Production
 type Environment = { someState :: String }
@@ -34,5 +34,5 @@ instance logToScreenAppM :: LogToScreen AppM where
 
 instance getUserNameAppM :: GetUserName AppM where
   getUserName = liftEffect do
-    contents <- readTextFile UTF8 "name.txt"
+    contents <- Sync.readTextFile UTF8 "name.txt"
     pure $ Name contents
