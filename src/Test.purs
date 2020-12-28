@@ -17,12 +17,12 @@ derive newtype instance applicativeTestM :: Applicative TestM
 derive newtype instance bindTestM        :: Bind TestM
 derive newtype instance monadTestM       :: Monad TestM
 
-runTest :: forall a. TestM a -> Environment -> a
-runTest (TestM reader) env = runReader reader env
+runApp :: forall a. TestM a -> Environment -> a
+runApp (TestM reader) env = runReader reader env
 
 -- | Layer 2 Test
 instance logToScreenTestM :: LogToScreen TestM where
   log _ = pure unit -- no need to implement this
 
 instance getUserNameTestM :: GetUserName TestM where
-  getUserName = pure $ Name "error" -- replace with better test
+  getUserName = pure $ Name "succeeds" -- replace with better test

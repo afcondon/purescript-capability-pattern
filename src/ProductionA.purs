@@ -1,4 +1,4 @@
-module App.Layer.Production where
+module App.Layer.ProductionA where
 -- Layers One and Two have to be in same file due to orphan instance restriction
 
 import Prelude
@@ -7,7 +7,7 @@ import App.Layer.Four (Name(..))
 import App.Layer.Three (class LogToScreen, class GetUserName)
 import Control.Monad.Reader (ReaderT, runReaderT)
 import Effect (Effect)
--- import Effect.Aff (launchAff, launchAff_)
+import Effect.Aff (Aff)
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Class.Console (log) as Console
 import Node.Encoding (Encoding(..))
@@ -24,8 +24,9 @@ derive newtype instance bindAppM        :: Bind AppM
 derive newtype instance monadAppM       :: Monad AppM
 derive newtype instance monadEffectAppM :: MonadEffect AppM
 
-runApp :: forall a. AppM a -> Environment -> Effect a
-runApp (AppM reader_T) env = runReaderT reader_T env
+runApp :: forall a. AppM a -> Environment -> Aff a
+runApp (AppM reader_T) env = 
+  liftEffect $ runReaderT reader_T env
 
 
 -- | Layer 1 Production
