@@ -20,7 +20,7 @@ derive newtype instance monadTestM       :: Monad TestM
 runApp :: forall a. TestM a -> Environment -> a
 runApp (TestM reader) env = runReader reader env
 
--- | Layer 2 Test
+-- | Layer 1 Test
 instance logToScreenTestM :: LogToScreen TestM where
   log _ = pure unit -- no need to implement this
 

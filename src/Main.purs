@@ -15,11 +15,9 @@ import Test.Assert (assert)
 
 -- | Layer 0 Production
 main :: Effect Unit
-main = do
-  mainSync { someState: "Sync"}
-  mainAff  { someState: "Aff"}
-  mainTest { someState: "Test"}
-  pure unit
+main = mainAff { someState: "Aff"}
+
+
 
 mainSync :: Sync.Environment -> Effect Unit
 mainSync env = do
@@ -38,5 +36,8 @@ mainAff env = launchAff_ do
   -- we can do aff-ish things here with ProductionA version
   result <- Async.runApp program env
   -- ...also able to do synchronous things (within Aff) using liftEffect
-  result2 <- liftEffect $ Sync.runApp program env
+  liftEffect $ mainSync { someState: "Sync" }
+
+  liftEffect $ mainTest { someState: "Test" }
+
   pure unit
