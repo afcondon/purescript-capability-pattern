@@ -1,5 +1,5 @@
 # purescript-capability-pattern
-Working *minimal* illustration of the Capability Design Pattern
+Working *minimal* illustration of the Capability Design Pattern in PureScript
 
 (Somewhat) fully fleshed-out example of the design pattern illustrated in Jordan Martinez' phenomenal [collection](https://jordanmartinez.github.io/purescript-jordans-reference-site/content/21-Hello-World/05-Application-Structure/src/02-MTL/32-The-ReaderT-Capability-Design-Pattern.html)
  of reference material and examples 
