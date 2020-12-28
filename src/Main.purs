@@ -15,10 +15,10 @@ import Test.Assert (assert)
 
 -- | Layer 0 Production
 main :: Effect Unit
-main = mainAff { someState: "Aff"}
+main = combinedMain
 
 
-
+-- Three different "main" functions for three different scenarios
 mainSync :: Sync.Environment -> Effect Unit
 mainSync env = do
   result <- Sync.runApp program env
@@ -30,14 +30,19 @@ mainTest env = do
   log "first test succeeded, now a failing test which will crash"
   assert $ (Test.runApp program env) == "failing test"
 
-
-mainAff :: Async.Environment -> Effect Unit
-mainAff env = launchAff_ do
-  -- we can do aff-ish things here with ProductionA version
+mainAff1 :: Async.Environment -> Effect Unit
+mainAff1 env = launchAff_ do
   result <- Async.runApp program env
+  pure unit
+
+
+
+-- mainAff more complicated version able to call mainSync and mainTest
+combinedMain :: Effect Unit
+combinedMain = launchAff_ do
+  -- we can do aff-ish things here with Async/ProductionA version
+  result <- Async.runApp program { asyncEnv: "async.txt" }
   -- ...also able to do synchronous things (within Aff) using liftEffect
-  liftEffect $ mainSync { someState: "Sync" }
-
-  liftEffect $ mainTest { someState: "Test" }
-
+  liftEffect $ mainSync { productionEnv: "sync.txt" }
+  liftEffect $ mainTest { testEnv: "Test" }
   pure unit
