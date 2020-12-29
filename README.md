@@ -6,6 +6,9 @@ Working *minimal* illustration of the Capability Design Pattern in PureScript
  
 I've added some `Aff` to the mix and made sure it compiles and does _something_ tho it's quite possible that i've made mistakes somewhere that make it imperfect as a starter template: PR's welcome.
 
+## How to build and run it
+`spago install` & `spago run` should do it
+
 ## What's in each "Layer"?
 
 ### Layer 4 - Core - Innermost layer
