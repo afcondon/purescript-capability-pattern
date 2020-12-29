@@ -29,9 +29,9 @@ Together they define:
  * a particular Monad in which our `program` from Layer 3 can be run
  * a `run` function that runs the `program` in _this_ Monad
  * the instances for the Monad
- ** Functor, Apply, Applicative, Bind & Monad can all be derived trivially
- ** others that a particular Monad might need can be written explicitly
- ** the instances that are required by the `program` in Layer 3, also will have to be written explicitly
+     * Functor, Apply, Applicative, Bind & Monad can all be derived trivially
+     * others that a particular Monad might need can be written explicitly
+     * the instances that are required by the `program` in Layer 3, also will have to be written explicitly
  
  ### Layer 0 - Runtime
  This layer is where it all comes together. A `main` is called by the underlying runtime and runs the `program` in one or another Monad.
