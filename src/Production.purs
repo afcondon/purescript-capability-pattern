@@ -14,11 +14,10 @@ import Node.FS.Sync (readTextFile) as Sync
 import Type.Equality (class TypeEquals, from)
 
 -- | Layer 2 Define our "Production" Monad...
-
 type Environment = { productionEnv :: String }
 newtype AppM a = AppM (ReaderT Environment Effect a)
 
--- |and the means to run computations in it
+-- | ...and the means to run computations in it
 runApp :: forall a. AppM a -> Environment -> Effect a
 runApp (AppM reader_T) env = runReaderT reader_T env
 
@@ -33,7 +32,7 @@ derive newtype instance bindAppM        :: Bind AppM
 derive newtype instance monadAppM       :: Monad AppM
 derive newtype instance monadEffectAppM :: MonadEffect AppM
 
--- | Reader instance not quite as simple a derivation as above,
+-- | Reader instance not quite as simple a derivation as "derive newtype",
 -- | as it needs TypeEquals for the env
 instance monadAskAppM :: TypeEquals e Environment => MonadAsk e AppM where
   ask = AppM $ asks from
@@ -43,7 +42,7 @@ instance monadAskAppM :: TypeEquals e Environment => MonadAsk e AppM where
 instance loggerAppM :: Logger AppM where
   log = liftEffect <<< Console.log
 
--- | a version of the getUserName that reads the name from a file 
+-- | a version of getUserName that reads the name from a file 
 -- | given in the Environment
 instance getUserNameAppM :: GetUserName AppM where
   getUserName = do
