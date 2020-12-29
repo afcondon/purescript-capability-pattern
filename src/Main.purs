@@ -4,6 +4,7 @@ import Prelude
 
 import App.Layer.Production (runApp, Environment) as Sync
 import App.Layer.ProductionA (runApp, Environment) as Async
+import App.Layer.ProductionE (runApp, Environment) as Ex
 import App.Layer.Test (runApp, Environment) as Test
 import App.Layer.Three (program)
 import Effect (Effect)
@@ -35,6 +36,10 @@ mainAff1 env = launchAff_ do
   result <- Async.runApp program env
   pure unit
 
+mainExceptions :: Ex.Environment -> Effect Unit
+mainExceptions env = launchAff_ do
+  result <- Ex.runApp program env
+  pure unit
 
 
 -- mainAff more complicated version able to call mainSync and mainTest
