@@ -16,7 +16,7 @@ import Test.Assert (assert)
 
 -- | Layer 0 Production
 main :: Effect Unit
-main = combinedMain
+main = mainExceptions { exceptEnv: "ExceptT" }
 
 
 -- Three different "main" functions for three different scenarios

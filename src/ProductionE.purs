@@ -1,23 +1,27 @@
 module App.Layer.ProductionE where
 -- Layers One and Two have to be in same file due to orphan instance restriction
 
+import Prelude
+
 import App.Layer.Four (Name(..))
 import App.Layer.Three (class Logger, class GetUserName)
-import Control.Monad.Error.Class (class MonadError, class MonadThrow)
-import Control.Monad.Except (ExceptT, runExceptT)
+import Control.Monad.Error.Class (class MonadError, class MonadThrow, catchError, throwError)
+import Control.Monad.Except (Except, ExceptT(..), runExcept, runExceptT)
 import Control.Monad.Reader (class MonadAsk, ReaderT, ask, asks, runReaderT)
-import Data.Either (Either)
+import Data.Either (Either(..))
+import Data.Identity (Identity(..))
+import Effect (Effect)
 import Effect.Aff (Aff, Milliseconds(..), delay)
 import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Class.Console (log) as Console
 import Node.Encoding (Encoding(..))
 import Node.FS.Aff (readTextFile) as Async
-import Prelude (class Applicative, class Apply, class Bind, class Functor, class Monad, bind, discard, pure, ($), (<<<))
 import Type.Equality (class TypeEquals, from)
 
 
-data ErrorV = ErrorV -- level up with Variant when this is type-checked and running
+newtype ErrorV = ErrorV String -- level up with Variant when this is type-checked and running
+derive newtype instance showErrorV :: Show ErrorV
 
 -- | Layer 2 Define our "Production" Monad but using Aff...
 type Environment = { exceptEnv :: String }
@@ -55,7 +59,15 @@ instance loggerAppME :: Logger AppME where
 instance getUserNameAppME :: GetUserName AppME where
   getUserName = do
     env <- ask -- we still have access to underlying ReaderT
-    liftAff do -- but we can also run computations in Aff
-      delay $ Milliseconds 1000.0 -- 1 second
-      contents <- Async.readTextFile UTF8 env.exceptEnv
-      pure $ Name $ contents
+
+    liftEffect $ compute $ ExceptT (Identity (Right 5))
+
+    -- after all this is done, we're still committed to returning a Name
+    pure $ Name $ "didn't crash here!"
+
+    
+compute :: Except String Int -> Effect Unit
+compute theComputation =
+  case runExcept theComputation of
+    Left error   -> Console.log $ "Failed computation! Error was:  " <> error
+    Right output -> Console.log $ "Successful computation! Output: " <> show output
