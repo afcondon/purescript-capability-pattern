@@ -55,18 +55,22 @@ instance loggerAppME :: Logger AppME where
 instance getUserNameAppME :: GetUserName AppME where
   getUserName = do
     env <- ask -- we still have access to underlying ReaderT
-    -- after all this is done, we're still committed to returning a Name
 
-    result1 <- pure $ failCode
-    result2 <- pure $ successCode
+    result <- dependentCode env
 
-    case result2 of
+    case result of
       Left (ErrorV err) -> pure $ Name err
       Right res -> pure $ Name res
 
+-- these are computations that can fail but the only thing we know about them is that they are at least Applicative 
+failCode :: forall a. Applicative a => a (Either ErrorV String)
+failCode = pure $ Left $ ErrorV "A simple error"
 
-failCode :: Either ErrorV String
-failCode = Left $ ErrorV "A simple error"
+successCode :: forall a. Applicative a => a (Either ErrorV String)
+successCode = pure $ Right "Valid"
 
-successCode :: Either ErrorV String
-successCode = Right "A simple error"
+dependentCode :: forall a. Applicative a => Environment -> a (Either ErrorV String)
+dependentCode env =
+  case env.exceptEnv of
+    "ExceptT" -> successCode
+    _ -> failCode

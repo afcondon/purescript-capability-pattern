@@ -38,7 +38,8 @@ mainAff1 env = launchAff_ do
 
 mainExceptions :: Ex.Environment -> Effect Unit
 mainExceptions env = launchAff_ do
-  result <- Ex.runApp program env
+  result1 <- Ex.runApp program env
+  result2 <- Ex.runApp program { exceptEnv: "" }
   pure unit
 
 
