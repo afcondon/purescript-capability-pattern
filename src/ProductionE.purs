@@ -5,19 +5,18 @@ import Prelude
 
 import App.Layer.Four (Name(..))
 import App.Layer.Three (class Logger, class GetUserName)
-import Control.Monad.Error.Class (class MonadError, class MonadThrow, catchError, catchJust, throwError, try, withResource)
+import Control.Monad.Error.Class (class MonadError, class MonadThrow, catchError, catchJust, try, withResource)
 import Control.Monad.Except (Except, ExceptT(..), runExcept, runExceptT)
 import Control.Monad.Reader (class MonadAsk, ReaderT, ask, asks, runReaderT)
+import Control.Plus (empty)
 import Data.Either (Either(..))
 import Data.Identity (Identity(..))
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
-import Effect.Aff (Aff, Milliseconds(..), delay)
-import Effect.Aff.Class (class MonadAff, liftAff)
+import Effect.Aff (Aff)
+import Effect.Aff.Class (class MonadAff)
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Class.Console (log) as Console
-import Node.Encoding (Encoding(..))
-import Node.FS.Aff (readTextFile) as Async
 import Type.Equality (class TypeEquals, from)
 
 
@@ -61,35 +60,23 @@ instance getUserNameAppME :: GetUserName AppME where
   getUserName = do
     env <- ask -- we still have access to underlying ReaderT
 
-    liftEffect do
-      runMainFunction
-      Console.log "=== Derived Functions ==="
-      example_catchJust
-      example_try
-      example_withResource
-
+    -- this isn't running on our AppME monad, it's running on the given ExceptT Identity
+    -- liftEffect do 
+    --   compute' (try $ ExceptT ( Identity ( Right 5 ) ))
+    --   compute' (try $ ExceptT ( Identity ( Left "an error occurred!" ) ))
 
     -- after all this is done, we're still committed to returning a Name
     pure $ Name $ "didn't crash here!"
 
-    
-computationThatFailsWith :: forall e. e -> Except e Int
-computationThatFailsWith error = ExceptT (
-    -- A computation
-    Identity (
-      -- that failed and produced an error
-      Left error
-    )
-  )
+compute' :: Except String (Either String Int) -> Effect Unit
+compute' theComputation =
+  case runExcept theComputation of
+    Left error   -> Console.log $ "Failed computation! Error was:  " <> show error
+    Right e_or_a -> case e_or_a of
+      Left e  -> Console.log $ "Exposed error instance in do notation: "  <> show e
+      Right a -> Console.log $ "Exposed output instance in do notation: " <> show a
 
-computationThatSucceedsWith :: forall e a. a -> Except e a
-computationThatSucceedsWith a = ExceptT (
-    -- A computation
-    Identity (
-      -- that succeeded and produced the output
-      Right a
-    )
-  )
+{- 
 
 compute :: forall e a. Show e => Show a => Except e a -> Effect Unit
 compute theComputation =
@@ -221,3 +208,4 @@ computationThatUseResource :: Resource -> Except String Int
 computationThatUseResource r = -- do
   -- use resource here to compute some value
   ExceptT (pure $ Right 5)
+ -}
