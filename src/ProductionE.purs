@@ -56,7 +56,7 @@ instance getUserNameAppME :: GetUserName AppME where
   getUserName = do
     env <- ask -- we still have access to underlying ReaderT
 
-    result <- dependentCode env
+    result <- possiblyFailingCode env
 
     case result of
       Left (ErrorV err) -> pure $ Name err
@@ -69,8 +69,9 @@ failCode = pure $ Left $ ErrorV "A simple error"
 successCode :: forall a. Applicative a => a (Either ErrorV String)
 successCode = pure $ Right "Valid"
 
-dependentCode :: forall a. Applicative a => Environment -> a (Either ErrorV String)
-dependentCode env =
-  case env.exceptEnv of
-    "ExceptT" -> successCode
-    _ -> failCode
+-- here we're using `do` so the requirement is Bind + Applicative = Monad
+possiblyFailingCode :: forall m. Monad m => Environment -> m (Either ErrorV String)
+possiblyFailingCode _ = do
+  x <- failCode
+  y <- successCode
+  pure x
