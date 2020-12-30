@@ -5,14 +5,10 @@ import Prelude
 
 import App.Layer.Four (Name(..))
 import App.Layer.Three (class Logger, class GetUserName)
-import Control.Monad.Error.Class (class MonadError, class MonadThrow, catchError, catchJust, throwError, try, withResource)
-import Control.Monad.Except (Except, ExceptT(..), runExcept, runExceptT)
+import Control.Monad.Error.Class (class MonadError, class MonadThrow, catchError)
+import Control.Monad.Except (ExceptT, runExceptT)
 import Control.Monad.Reader (class MonadAsk, ReaderT, ask, asks, runReaderT)
-import Control.Plus (empty)
 import Data.Either (Either(..))
-import Data.Identity (Identity(..))
-import Data.Maybe (Maybe(..))
-import Effect (Effect)
 import Effect.Aff (Aff)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class (class MonadEffect, liftEffect)
@@ -59,6 +55,18 @@ instance loggerAppME :: Logger AppME where
 instance getUserNameAppME :: GetUserName AppME where
   getUserName = do
     env <- ask -- we still have access to underlying ReaderT
-    _ <- throwError $ ErrorV "Error!"
     -- after all this is done, we're still committed to returning a Name
-    pure $ Name $ "didn't crash here!"
+
+    result1 <- pure $ failCode
+    result2 <- pure $ successCode
+
+    case result2 of
+      Left (ErrorV err) -> pure $ Name err
+      Right res -> pure $ Name res
+
+
+failCode :: Either ErrorV String
+failCode = Left $ ErrorV "A simple error"
+
+successCode :: Either ErrorV String
+successCode = Right "A simple error"
