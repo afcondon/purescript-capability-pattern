@@ -6,6 +6,7 @@ You can edit this file as you like.
 , dependencies =
   [ "aff"
   , "assert"
+  , "checked-exceptions"
   , "console"
   , "effect"
   , "node-fs"
