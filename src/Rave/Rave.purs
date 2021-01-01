@@ -1,4 +1,4 @@
-module Rave where
+module App.Rave where
 
 import Prelude
 
@@ -13,7 +13,8 @@ import Data.Either (Either(..))
 import Data.Symbol (class IsSymbol, SProxy(..))
 import Data.Variant (class VariantShows, Variant, inj)
 import Data.Variant.Internal (class VariantTags, RProxy(..))
-import Effect.Aff (Aff, error)
+import Effect (Effect)
+import Effect.Aff (Aff, error, launchAff_)
 import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Class.Console as Console
@@ -30,17 +31,13 @@ import Record (get) as Record
 import Type.Data.Row (RProxy)
 import Type.Equality (class TypeEquals, from)
 
--- minimal scaffolding for call to getPureScript
-mainEx = runRave (RProxy :: _ ()) { raveEnv: "dummy env" } do
-  getPureScript
+-- | ...and the means to run computations in it
+-- runApp :: forall a v. Rave Environment v a -> Environment  -> Aff (Either Error a)
+runApp rave env = runRave (RProxy :: _ ()) env rave
 
 -- the unified function 
-getPureScript
-  ∷ ∀ m r
-  . MonadHttp m
-  ⇒ MonadFs m
-  ⇒ ExceptV (HttpError + FsError + r) m Unit
-getPureScript =
+-- getPureScript ∷ ∀ r env. Rave env (HttpError + FsError + r) Unit
+getPureScript = do
   getEV "http://purescript.org" >>= writeEV "~/purescript.html"
 
 
@@ -50,31 +47,31 @@ type Environment = { raveEnv :: String }
 -- | Short for "Reader, Aff, Variant."
 newtype Rave env var a = Rave (ReaderT env (ExceptV var Aff) a)
 
-derive newtype instance raveMonadAff    :: MonadAff (Rave r v)
-derive newtype instance raveMonadEffect :: MonadEffect (Rave r v)
-derive newtype instance raveMonad       :: Monad (Rave r v)
-derive newtype instance raveApplicative :: Applicative (Rave r v)
-derive newtype instance raveApply       :: Apply (Rave r v)
-derive newtype instance raveFunctor     :: Functor (Rave r v)
-derive newtype instance raveBind        :: Bind (Rave r v)
-derive newtype instance raveMonadError  :: MonadThrow (Variant v) (Rave r v)
+derive newtype instance raveMonadAff    :: MonadAff (Rave env var)
+derive newtype instance raveMonadEffect :: MonadEffect (Rave env var)
+derive newtype instance raveMonad       :: Monad (Rave env var)
+derive newtype instance raveApplicative :: Applicative (Rave env var)
+derive newtype instance raveApply       :: Apply (Rave env var)
+derive newtype instance raveFunctor     :: Functor (Rave env var)
+derive newtype instance raveBind        :: Bind (Rave env var)
+derive newtype instance raveMonadError  :: MonadThrow (Variant var) (Rave env var)
 
 -- | Capability instances
-instance raveMonadHttp :: MonadHttp (Rave r v)
-instance raveMonadFS   :: MonadFs (Rave r v)
+instance raveMonadHttp :: MonadHttp (Rave env var)
+instance raveMonadFS   :: MonadFs (Rave env var)
 
 
 instance raveMonadAsk :: TypeEquals e1 e2 => MonadAsk e1 (Rave e2 v) where
   ask = Rave $ asks from
 
-instance loggerRave :: Logger (Rave r v) where
+instance loggerRave :: Logger (Rave env var) where
   log msg = liftEffect $ Console.log msg
 
-instance getUserNameRave :: GetUserName Rave where
+instance getUserNameRave :: GetUserName (Rave env var) where
   getUserName = do
     env <- ask -- we still have access to underlying ReaderT
 
-    result <- possiblyFailingCode env
+    -- result <- possiblyFailingCode env
 
     -- case result of
     --   Left (Error err) -> pure $ Name err
@@ -82,9 +79,9 @@ instance getUserNameRave :: GetUserName Rave where
   
     pure $ Name "sort out the types first"
 
--- these are computations that can fail but the only requirement is at least Applicative 
--- failCode :: forall a. Applicative a => a (Either Error String)
-failCode = liftAffV $ Left $ throw "A simple error"
+{- -- these are computations that can fail but the only requirement is at least Applicative 
+failCode :: forall a. Applicative a => a (Either Error String)
+failCode = liftAffV $ Left $ throw ?foo
 
 -- successCode :: forall a. Applicative a => a (Either Error String)
 successCode :: forall t17 t20. Applicative t17 => t17 (Either t20 String)
@@ -96,23 +93,10 @@ possiblyFailingCode _ = do
   x <- failCode
   y <- successCode
   pure x
+ -}
+
 
 -- original Rave machinery below
-
-liftRave :: forall m a r. MonadError Error m => m a -> ExceptV (liftedError :: Error | r) m a
-liftRave e = do
-  run <- lift $ try e
-  case run of
-    Right r -> pure r
-    Left l -> throw { liftedError: l }
-
-liftAffV :: forall r m a. MonadAff m => Aff a -> ExceptV (liftedError :: Error | r) m a
-liftAffV e = do
-  run <- liftAff $ try e
-  case run of
-    Right r -> pure r
-    Left l -> throw { liftedError: l }
- 
 
 class VariantInjTagged a b | a -> b where
   injTagged :: Record a -> Variant b
@@ -133,20 +117,34 @@ throw :: forall m r1 r2 a.
   m a
 throw = throwError <<< injTagged
 
-runRave :: forall v r rl a.
-  RowToList v rl =>
+runRave :: forall var env rl a.
+  RowToList var rl =>
   VariantTags rl =>
   VariantShows rl =>
-  RProxy v ->
-  r ->
-  Rave r v a ->
+  RProxy var ->
+  env ->
+  Rave env var a ->
   Aff a
-runRave _ r (Rave rave) = do
-  ran <- runExceptT $ runReaderT rave r
+runRave _ env (Rave rave) = do
+  ran <- runExceptT $ runReaderT rave env
   case ran of
     Right res -> pure res
     Left l -> throwError $ error $ show l
 
+liftRave :: forall m a r. MonadError Error m => m a -> ExceptV (liftedError :: Error | r) m a
+liftRave e = do
+  run <- lift $ try e
+  case run of
+    Right r -> pure r
+    Left l -> throw { liftedError: l }
+
+liftAffV :: forall r m a. MonadAff m => Aff a -> ExceptV (liftedError :: Error | r) m a
+liftAffV e = do
+  run <- liftAff $ try e
+  case run of
+    Right r -> pure r
+    Left l -> throw { liftedError: l }
+ 
 
 -- itV :: forall r.
 --   RProxy r

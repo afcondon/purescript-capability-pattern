@@ -7,6 +7,7 @@ import App.Layer.ProductionA (runApp, Environment) as Async
 import App.Layer.ProductionE (runApp, Environment) as Ex
 import App.Layer.Test (runApp, Environment) as Test
 import App.Layer.Three (program)
+import App.Rave as Rave
 import Effect (Effect)
 import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
@@ -16,7 +17,10 @@ import Test.Assert (assert)
 
 -- | Layer 0 Production
 main :: Effect Unit
-main = mainExceptions { exceptEnv: "ExceptT" }
+-- main = mainExceptions { exceptEnv: "ExceptT" }
+main = launchAff_ do
+  result <- Rave.runApp program { raveEnv: "Edgar Allen Poe"}
+  pure unit
 
 
 -- Three different "main" functions for three different scenarios
@@ -42,6 +46,10 @@ mainExceptions env = launchAff_ do
   result2 <- Ex.runApp program { exceptEnv: "" }
   pure unit
 
+mainRave :: Rave.Environment -> Effect Unit
+mainRave env = launchAff_ do
+  result <- Rave.runApp program env
+  pure unit
 
 -- mainAff more complicated version able to call mainSync and mainTest
 combinedMain :: Effect Unit
