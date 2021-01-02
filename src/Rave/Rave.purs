@@ -71,8 +71,8 @@ instance getUserNameRave :: GetUserName (Rave env var) where
   getUserName = do
     env <- ask -- we still have access to underlying ReaderT
 
-    resultHttp <- safe $ getEV "test" # handleError errorHandlersBundle
-    safe $ getPureScript # handleError errorHandlersBundle2
+    resultHttp <- safe $ getEV "test" # handleError (errorHandlersBundleWithDefault "error")
+    safe $ getPureScript # handleError (errorHandlersBundleWithDefault unit)
   
     pure $ Name resultHttp
 
@@ -111,56 +111,29 @@ getPureScript :: forall m t133
 getPureScript = do
   getEV "http://purescript.org" >>= writeEV "~/purescript.html"
 
-
-errorHandlersBundle :: forall m.
+errorHandlersBundleWithDefault :: forall m a.
+  a -> 
   MonadEffect m =>
-  { fsFileNotFound     :: FilePath -> m String
-  , fsPermissionDenied :: Unit -> m String
-  , httpNotFound       :: Unit -> m String
-  , httpOther          :: { body :: String, status :: Int} -> m String
-  , httpServerError    :: String -> m String
+  { fsFileNotFound     :: FilePath -> m a
+  , fsPermissionDenied :: Unit -> m a
+  , httpNotFound       :: Unit -> m a
+  , httpOther          :: { body :: String, status :: Int} -> m a
+  , httpServerError    :: String -> m a
   }
-errorHandlersBundle = {
+errorHandlersBundleWithDefault defaultValue = {
     httpServerError:    \error -> do
       Console.log $ "Server error:" <> error
-      pure "foo"
+      pure defaultValue
   , httpNotFound:       \error -> do
       Console.log "Not found"
-      pure "foo"
+      pure defaultValue
   , httpOther:          \error -> do
       Console.log $ "Other: { status: " <> show error.status <> " , body: " <> error.body <> "}"
-      pure "foo"
+      pure defaultValue
   , fsFileNotFound:     \error -> do
       Console.log $ "File Not Found" <> error
-      pure "foo"
+      pure defaultValue
   , fsPermissionDenied: \error -> do
       Console.log "Permission Denied"
-      pure "foo"
+      pure defaultValue
 }
-
-errorHandlersBundle2:: forall m.
-  MonadEffect m =>
-  { fsFileNotFound     :: FilePath -> m Unit
-  , fsPermissionDenied :: Unit -> m Unit
-  , httpNotFound       :: Unit -> m Unit
-  , httpOther          :: { body :: String, status :: Int} -> m Unit
-  , httpServerError    :: String -> m Unit
-  }
-errorHandlersBundle2 = {
-    httpServerError:    \error -> do
-      Console.log $ "Server error:" <> error
-      pure unit
-  , httpNotFound:       \error -> do
-      Console.log "Not found"
-      pure unit
-  , httpOther:          \error -> do
-      Console.log $ "Other: { status: " <> show error.status <> " , body: " <> error.body <> "}"
-      pure unit
-  , fsFileNotFound:     \error -> do
-      Console.log $ "File Not Found" <> error
-      pure unit
-  , fsPermissionDenied: \error -> do
-      Console.log "Permission Denied"
-      pure unit
-}
-
