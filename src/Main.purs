@@ -19,7 +19,10 @@ import Test.Assert (assert)
 main :: Effect Unit
 -- main = mainExceptions { exceptEnv: "ExceptT" }
 main = launchAff_ do
-  result <- Rave.runApp program { raveEnv: "Edgar Allen Poe"}
+  result1 <- Async.runApp program { asyncEnv: "async.txt" }
+  result2 <- Rave.runApp program { raveEnv: "Edgar Allen Poe"}
+  liftEffect $ mainSync { productionEnv: "sync.txt" }
+  liftEffect $ mainTest { testEnv: "Test" }
   pure unit
 
 
@@ -32,8 +35,6 @@ mainSync env = do
 mainTest :: Test.Environment -> Effect Unit
 mainTest env = do
   assert $ (Test.runApp program env) == "succeeds"
-  log "first test succeeded, now a failing test which will crash"
-  assert $ (Test.runApp program env) == "failing test"
 
 mainAff1 :: Async.Environment -> Effect Unit
 mainAff1 env = launchAff_ do

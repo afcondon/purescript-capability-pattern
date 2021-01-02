@@ -17,8 +17,8 @@ import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Class.Console as Console
 import Node.Path (FilePath)
 import Prim.RowList (class RowToList)
-import Rave.FS (class MonadFs, write) as FS
-import Rave.HTTP (class MonadHttp, get) as HTTP
+import Rave.FS (write) as FS
+import Rave.HTTP (get) as HTTP
 import Rave.FS (class MonadFs)
 import Rave.HTTP (class MonadHttp)
 import Type.Data.Row (RProxy)
@@ -77,25 +77,6 @@ instance getUserNameRave :: GetUserName (Rave env var) where
     safe $ getPureScript # handleError (errorHandlersBundleWithDefault unit)
   
     pure $ Name resultHttp
-
-{- 
-
--- these are computations that can fail but the only requirement is at least Applicative 
--- failCode :: forall a. Applicative a => a (Either Error String)
-failCode = pure $ Left $ throw ?foo
-
--- successCode :: forall a. Applicative a => a (Either Error String)
--- successCode :: forall t17 t20. Applicative t17 => t17 (Either t20 String)
-successCode = pure $ Right "Valid"
-
--- here we're using `do` so the requirement is Bind + Applicative = Monad
--- possiblyFailingCode :: forall m. Monad m => Environment -> m (Either Error String)
-possiblyFailingCode _ = do
-  x <- failCode
-  y <- successCode
-  pure x 
-  
--}
 
 -- the unified function 
 -- getPureScript ∷ ∀ r env. Rave env (HttpError + FsError + r) Unit
