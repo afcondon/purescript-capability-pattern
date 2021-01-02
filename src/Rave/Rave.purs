@@ -5,7 +5,7 @@ import Prelude
 import App.Layer.Four (Name(..))
 import App.Layer.Three (class GetUserName, class Logger)
 import Control.Monad.Error.Class (class MonadThrow, throwError)
-import Control.Monad.Except (ExceptT, runExceptT)
+import Control.Monad.Except (runExceptT)
 import Control.Monad.Except.Checked (ExceptV, handleError, safe)
 import Control.Monad.Reader (class MonadAsk, ReaderT, ask, asks, runReaderT)
 import Data.Either (Either(..))
@@ -17,8 +17,10 @@ import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Class.Console as Console
 import Node.Path (FilePath)
 import Prim.RowList (class RowToList)
-import Rave.FS (class MonadFs, writeEV)
-import Rave.HTTP (class MonadHttp, getEV)
+import Rave.FS (class MonadFs, write) as FS
+import Rave.HTTP (class MonadHttp, get) as HTTP
+import Rave.FS (class MonadFs)
+import Rave.HTTP (class MonadHttp)
 import Type.Data.Row (RProxy)
 import Type.Equality (class TypeEquals, from)
 
@@ -71,7 +73,7 @@ instance getUserNameRave :: GetUserName (Rave env var) where
   getUserName = do
     env <- ask -- we still have access to underlying ReaderT
 
-    resultHttp <- safe $ getEV "test" # handleError (errorHandlersBundleWithDefault "error")
+    resultHttp <- safe $ HTTP.get "test" # handleError (errorHandlersBundleWithDefault "error")
     safe $ getPureScript # handleError (errorHandlersBundleWithDefault unit)
   
     pure $ Name resultHttp
@@ -109,7 +111,7 @@ getPureScript :: forall m t133
                 | t133
                 ) m Unit
 getPureScript = do
-  getEV "http://purescript.org" >>= writeEV "~/purescript.html"
+  HTTP.get "http://purescript.org" >>= FS.write "~/purescript.html"
 
 errorHandlersBundleWithDefault :: forall m a.
   a -> 

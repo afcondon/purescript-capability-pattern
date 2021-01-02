@@ -14,6 +14,7 @@ You can edit this file as you like.
   , "node-readline"
   , "psci-support"
   , "transformers"
+  , "typelevel-prelude"
   ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs", "test/**/*.purs" ]

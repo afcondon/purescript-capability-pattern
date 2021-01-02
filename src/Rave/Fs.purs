@@ -1,21 +1,21 @@
 module Rave.FS where
 
 import Prelude (class Monad, Unit, pure, unit)
-import Rave.RowTypes (type (+))
 
+import Type.Row (type (+))
 import Control.Monad.Except.Checked (ExceptV)
 import Data.Variant (SProxy(..), inj, Variant)
 import Node.Path (FilePath)
 
 
 -- we wish to export this checked-exception wrapper for some underlying FS operation
-writeEV
+write
   ∷ ∀ r m.
     MonadFs m ⇒ 
     FilePath
   → String
   → ExceptV (FsError + r) m Unit
-writeEV filePath string = pure unit
+write filePath string = pure unit
 
 
 
