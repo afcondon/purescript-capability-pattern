@@ -1,10 +1,9 @@
 module Rave.HTTP where
 
-import Prelude (class Monad, Unit, pure, unit)
-import Rave.RowTypes (type (+))
-
 import Control.Monad.Except.Checked (ExceptV)
 import Data.Variant (SProxy(..), Variant, inj)
+import Prelude (class Monad, Unit, pure, unit)
+import Rave.RowTypes (type (+))
 
 
 -- we wish to export this checked-exception wrapper for some underlying http operation
@@ -15,15 +14,15 @@ getEV
   → ExceptV (HttpError + r) m String
 getEV url = pure "dummy"
 
-
-
-
+getEVasUnit
+  ∷ ∀ r m.
+    MonadHttp m ⇒ 
+    String
+  → ExceptV (HttpError + r) m Unit
+getEVasUnit url = pure unit
 
 -- fake HTTP monad for demonstration purposes
 class (Monad m) <= MonadHttp m
-
-
-
 
 -- Typed exceptions for HTTP
 type HttpServerError r = (httpServerError ∷ String | r)

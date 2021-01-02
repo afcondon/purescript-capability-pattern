@@ -6,7 +6,7 @@ import App.Layer.Four (Name(..))
 import App.Layer.Three (class GetUserName, class Logger)
 import Control.Monad.Error.Class (class MonadError, class MonadThrow, throwError, try)
 import Control.Monad.Except (ExceptT, runExceptT)
-import Control.Monad.Except.Checked (ExceptV)
+import Control.Monad.Except.Checked (ExceptV, handleError, safe)
 import Control.Monad.Reader (class MonadAsk, ReaderT, ask, asks, runReaderT)
 import Control.Monad.Trans.Class (lift)
 import Data.Either (Either(..))
@@ -25,18 +25,33 @@ import Prim.Row as R
 import Prim.RowList (class RowToList)
 import Prim.RowList as RL
 import Rave.FS (class MonadFs, FsError, writeEV)
-import Rave.HTTP (class MonadHttp, HttpError, getEV)
+import Rave.HTTP (class MonadHttp, HttpError, getEV, getEVasUnit)
 import Rave.RowTypes (type (+))
 import Record (get) as Record
 import Type.Data.Row (RProxy)
 import Type.Equality (class TypeEquals, from)
 
 -- | ...and the means to run computations in it
--- runApp :: forall a v. Rave Environment v a -> Environment  -> Aff (Either Error a)
+runApp :: forall a. Rave Environment () a -> Environment -> Aff a
 runApp rave env = runRave (RProxy :: _ ()) env rave
 
 -- the unified function 
 -- getPureScript ∷ ∀ r env. Rave env (HttpError + FsError + r) Unit
+getPureScript :: forall m t133
+  . Monad m
+  => MonadHttp m
+  => MonadFs m
+  => ExceptT (Variant
+                ( fsFileNotFound     :: String
+                , fsPermissionDenied :: Unit
+                , httpNotFound    :: Unit
+                , httpOther       :: { status :: Int, body :: String }
+                , httpServerError :: String
+                | t133
+                )
+              )
+              m
+              Unit
 getPureScript = do
   getEV "http://purescript.org" >>= writeEV "~/purescript.html"
 
@@ -58,8 +73,8 @@ derive newtype instance raveMonadError  :: MonadThrow (Variant var) (Rave env va
 
 -- | Capability instances
 instance raveMonadHttp :: MonadHttp (Rave env var)
-instance raveMonadFS   :: MonadFs (Rave env var)
 
+instance raveMonadFS   :: MonadFs (Rave env var)
 
 instance raveMonadAsk :: TypeEquals e1 e2 => MonadAsk e1 (Rave e2 v) where
   ask = Rave $ asks from
@@ -71,29 +86,35 @@ instance getUserNameRave :: GetUserName (Rave env var) where
   getUserName = do
     env <- ask -- we still have access to underlying ReaderT
 
-    -- result <- possiblyFailingCode env
-
-    -- case result of
-    --   Left (Error err) -> pure $ Name err
-    --   Right res -> pure $ Name res
+    resultHttp <- safe $ (getEVasUnit "test") # handleError {
+          httpServerError:    \error -> Console.log $ "Server error:" <> error
+        , httpNotFound:       \error -> Console.log "Not found"
+        , httpOther:          \error -> Console.log $ "Other: { status: " <> show error.status <> " , body: " <> error.body <> "}"
+        , fsFileNotFound:     \error -> Console.log $ "File Not Found" <> error
+        , fsPermissionDenied: \error -> Console.log "Permission Denied"
+      }
   
-    pure $ Name "sort out the types first"
+    pure $ Name "sort out the types first, then we'll see about names"
 
-{- -- these are computations that can fail but the only requirement is at least Applicative 
-failCode :: forall a. Applicative a => a (Either Error String)
-failCode = liftAffV $ Left $ throw ?foo
+{- 
+
+-- these are computations that can fail but the only requirement is at least Applicative 
+-- failCode :: forall a. Applicative a => a (Either Error String)
+failCode = pure $ Left $ throw ?foo
 
 -- successCode :: forall a. Applicative a => a (Either Error String)
-successCode :: forall t17 t20. Applicative t17 => t17 (Either t20 String)
+-- successCode :: forall t17 t20. Applicative t17 => t17 (Either t20 String)
 successCode = pure $ Right "Valid"
 
 -- here we're using `do` so the requirement is Bind + Applicative = Monad
-possiblyFailingCode :: forall m. Monad m => Environment -> m (Either Error String)
+-- possiblyFailingCode :: forall m. Monad m => Environment -> m (Either Error String)
 possiblyFailingCode _ = do
   x <- failCode
   y <- successCode
-  pure x
- -}
+  pure x 
+  
+-}
+
 
 
 -- original Rave machinery below
