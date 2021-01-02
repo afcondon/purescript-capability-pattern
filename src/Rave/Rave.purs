@@ -6,7 +6,7 @@ import App.Layer.Four (Name(..))
 import App.Layer.Three (class GetUserName, class Logger)
 import Control.Monad.Error.Class (class MonadError, class MonadThrow, throwError, try)
 import Control.Monad.Except (ExceptT, runExceptT)
-import Control.Monad.Except.Checked (ExceptV, handleError, safe)
+import Control.Monad.Except.Checked (ExceptV, handleError, handleErrors, safe)
 import Control.Monad.Reader (class MonadAsk, ReaderT, ask, asks, runReaderT)
 import Control.Monad.Trans.Class (lift)
 import Data.Either (Either(..))
@@ -86,13 +86,7 @@ instance getUserNameRave :: GetUserName (Rave env var) where
   getUserName = do
     env <- ask -- we still have access to underlying ReaderT
 
-    resultHttp <- safe $ (getEVasUnit "test") # handleError {
-          httpServerError:    \error -> Console.log $ "Server error:" <> error
-        , httpNotFound:       \error -> Console.log "Not found"
-        , httpOther:          \error -> Console.log $ "Other: { status: " <> show error.status <> " , body: " <> error.body <> "}"
-        , fsFileNotFound:     \error -> Console.log $ "File Not Found" <> error
-        , fsPermissionDenied: \error -> Console.log "Permission Denied"
-      }
+    resultHttp <- safe $ (getEV "test") # handleError errorHandlersBundle
   
     pure $ Name "sort out the types first, then we'll see about names"
 
@@ -115,6 +109,31 @@ possiblyFailingCode _ = do
   
 -}
 
+errorHandlersBundle :: forall m.
+  MonadEffect m =>
+  { fsFileNotFound     :: FilePath -> m String
+  , fsPermissionDenied :: Unit -> m String
+  , httpNotFound       :: Unit -> m String
+  , httpOther          :: { body :: String, status :: Int} -> m String
+  , httpServerError    :: String -> m String
+  }
+errorHandlersBundle = {
+    httpServerError:    \error -> do
+      Console.log $ "Server error:" <> error
+      pure "foo"
+  , httpNotFound:       \error -> do
+      Console.log "Not found"
+      pure "foo"
+  , httpOther:          \error -> do
+      Console.log $ "Other: { status: " <> show error.status <> " , body: " <> error.body <> "}"
+      pure "foo"
+  , fsFileNotFound:     \error -> do
+      Console.log $ "File Not Found" <> error
+      pure "foo"
+  , fsPermissionDenied: \error -> do
+      Console.log "Permission Denied"
+      pure "foo"
+}
 
 
 -- original Rave machinery below
