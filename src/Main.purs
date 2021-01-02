@@ -11,22 +11,22 @@ import App.Rave as Rave
 import Effect (Effect)
 import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
-import Effect.Class.Console (log)
 import Test.Assert (assert)
 
 
 -- | Layer 0 Production
 main :: Effect Unit
--- main = mainExceptions { exceptEnv: "ExceptT" }
 main = launchAff_ do
+  -- we can do aff-ish things here with Async/ProductionA version
   result1 <- Async.runApp program { asyncEnv: "async.txt" }
   result2 <- Rave.runApp program { raveEnv: "Edgar Allen Poe"}
+  -- ...also able to do synchronous things (within Aff) using liftEffect
   liftEffect $ mainSync { productionEnv: "sync.txt" }
   liftEffect $ mainTest { testEnv: "Test" }
   pure unit
 
 
--- Three different "main" functions for three different scenarios
+-- Different "main" functions for each of the different flavors of AppM
 mainSync :: Sync.Environment -> Effect Unit
 mainSync env = do
   result <- Sync.runApp program env
@@ -50,14 +50,4 @@ mainExceptions env = launchAff_ do
 mainRave :: Rave.Environment -> Effect Unit
 mainRave env = launchAff_ do
   result <- Rave.runApp program env
-  pure unit
-
--- mainAff more complicated version able to call mainSync and mainTest
-combinedMain :: Effect Unit
-combinedMain = launchAff_ do
-  -- we can do aff-ish things here with Async/ProductionA version
-  result <- Async.runApp program { asyncEnv: "async.txt" }
-  -- ...also able to do synchronous things (within Aff) using liftEffect
-  liftEffect $ mainSync { productionEnv: "sync.txt" }
-  liftEffect $ mainTest { testEnv: "Test" }
   pure unit
